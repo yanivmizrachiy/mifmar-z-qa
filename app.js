@@ -63,15 +63,15 @@ function renderP(text){
 }
 
 nav.innerHTML = `
-  <button class="nav-arrow nav-arrow-right" type="button" aria-label="גלילה ימינה">→</button>
+  <button class="nav-arrow nav-arrow-right" type="button" aria-label="נושא קודם">→</button>
   <div class="topic-nav-scroll" id="topicNavScroll" tabindex="0" aria-label="כפתורי ניווט לפי נושאים">
-    ${sections.map(s=>`<a href="#${s.id}">${s.title}</a>`).join('')}
+    ${sections.map(s=>`<a href="#${s.id}" data-target="${s.id}">${s.title}</a>`).join('')}
   </div>
-  <button class="nav-arrow nav-arrow-left" type="button" aria-label="גלילה שמאלה">←</button>
+  <button class="nav-arrow nav-arrow-left" type="button" aria-label="נושא הבא">←</button>
 `;
 
 content.innerHTML = sections.map(section => `
-<section class="topic-section" id="${section.id}">
+<section class="topic-section" id="${section.id}" data-section-id="${section.id}">
   <h2>${section.title}</h2>
   ${section.items.map(item => `
     <article class="qa-card">
@@ -83,6 +83,59 @@ content.innerHTML = sections.map(section => `
 </section>`).join('');
 
 const scrollBox = document.getElementById('topicNavScroll');
-const navStep = () => Math.max(220, Math.round(scrollBox.clientWidth * 0.82));
-document.querySelector('.nav-arrow-left').addEventListener('click', () => scrollBox.scrollBy({ left: -navStep(), behavior: 'smooth' }));
-document.querySelector('.nav-arrow-right').addEventListener('click', () => scrollBox.scrollBy({ left: navStep(), behavior: 'smooth' }));
+const navLinks = [...scrollBox.querySelectorAll('a[data-target]')];
+const sectionsById = new Map(sections.map(s => [s.id, document.getElementById(s.id)]));
+let activeIndex = 0;
+
+function updateArrowState(){
+  const right = document.querySelector('.nav-arrow-right');
+  const left = document.querySelector('.nav-arrow-left');
+  right.disabled = activeIndex <= 0;
+  left.disabled = activeIndex >= sections.length - 1;
+}
+
+function setActive(index, scrollChip = true){
+  activeIndex = Math.max(0, Math.min(index, navLinks.length - 1));
+  navLinks.forEach((link, i) => {
+    const isActive = i === activeIndex;
+    link.classList.toggle('active', isActive);
+    if(isActive){ link.setAttribute('aria-current', 'true'); }
+    else { link.removeAttribute('aria-current'); }
+  });
+  if(scrollChip){
+    navLinks[activeIndex].scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  }
+  updateArrowState();
+}
+
+function goToIndex(index){
+  const nextIndex = Math.max(0, Math.min(index, navLinks.length - 1));
+  const targetId = navLinks[nextIndex].dataset.target;
+  const target = sectionsById.get(targetId);
+  setActive(nextIndex);
+  if(target){ target.scrollIntoView({behavior:'smooth', block:'start'}); }
+}
+
+navLinks.forEach((link, index) => {
+  link.addEventListener('click', event => {
+    event.preventDefault();
+    goToIndex(index);
+  }, {passive:false});
+});
+
+document.querySelector('.nav-arrow-right').addEventListener('click', () => goToIndex(activeIndex - 1));
+document.querySelector('.nav-arrow-left').addEventListener('click', () => goToIndex(activeIndex + 1));
+
+if('IntersectionObserver' in window){
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(entry => entry.isIntersecting)
+      .sort((a,b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top))[0];
+    if(!visible) return;
+    const idx = sections.findIndex(s => s.id === visible.target.id);
+    if(idx >= 0) setActive(idx, false);
+  }, {root:null, rootMargin:'-35% 0px -55% 0px', threshold:0.01});
+  sections.forEach(s => observer.observe(sectionsById.get(s.id)));
+}
+
+setActive(0, false);
