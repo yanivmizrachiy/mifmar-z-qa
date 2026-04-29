@@ -32,9 +32,57 @@ const sections = [
     {q:'איך יוצרים קשר עם מוקד הסיסמאות?', a:['ניתן ליצור קשר עם מוקד הסיסמאות של משרד החינוך בדרכים הבאות:\nחיוג ישיר: *6552\nWhatsApp: 050-622-9535','שעות הפעילות:\nימים א׳–ה׳: 7:30–17:00\nיום ו׳: 7:30–13:00']}
   ]}
 ];
-const nav=document.getElementById('topicNav');
-const content=document.getElementById('content');
-function htmlText(text){return String(text).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\n','<br>')}
-function renderP(text){const cls=text.includes('12.05.2026')||text.includes('90 דקות')?' class="highlight"':'';return `<p${cls}>${htmlText(text)}</p>`}
-nav.innerHTML=sections.map(s=>`<a href="#${s.id}">${s.title}</a>`).join('');
-content.innerHTML=sections.map(section=>`<section class="topic-section" id="${section.id}"><h2>${section.title}</h2>${section.items.map(item=>`<article class="qa-card"><h3>שאלה:</h3><p class="question">${item.q}</p><h4>תשובה:</h4><div class="answer">${item.a.map(renderP).join('')}</div></article>`).join('')}</section>`).join('');
+
+const nav = document.getElementById('topicNav');
+const content = document.getElementById('content');
+
+const whatsappLinks = {
+  '052-3748115': 'https://wa.me/972523748115',
+  '050-737-7563': 'https://wa.me/972507377563'
+};
+
+function htmlText(text){
+  return String(text)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('\n','<br>');
+}
+
+function linkifyWhatsApp(safeHtml){
+  let out = safeHtml;
+  Object.entries(whatsappLinks).forEach(([phone, url]) => {
+    out = out.replaceAll(phone, `<a class="whatsapp-link" href="${url}" target="_blank" rel="noopener" aria-label="פתיחת WhatsApp למספר ${phone}">${phone}</a>`);
+  });
+  return out;
+}
+
+function renderP(text){
+  const cls = text.includes('12.05.2026') || text.includes('90 דקות') ? ' class="highlight"' : '';
+  return `<p${cls}>${linkifyWhatsApp(htmlText(text))}</p>`;
+}
+
+nav.innerHTML = `
+  <button class="nav-arrow nav-arrow-right" type="button" aria-label="גלילה ימינה">→</button>
+  <div class="topic-nav-scroll" id="topicNavScroll" tabindex="0" aria-label="כפתורי ניווט לפי נושאים">
+    ${sections.map(s=>`<a href="#${s.id}">${s.title}</a>`).join('')}
+  </div>
+  <button class="nav-arrow nav-arrow-left" type="button" aria-label="גלילה שמאלה">←</button>
+`;
+
+content.innerHTML = sections.map(section => `
+<section class="topic-section" id="${section.id}">
+  <h2>${section.title}</h2>
+  ${section.items.map(item => `
+    <article class="qa-card">
+      <h3>שאלה:</h3>
+      <p class="question">${htmlText(item.q)}</p>
+      <h4>תשובה:</h4>
+      <div class="answer">${item.a.map(renderP).join('')}</div>
+    </article>`).join('')}
+</section>`).join('');
+
+const scrollBox = document.getElementById('topicNavScroll');
+const navStep = () => Math.max(220, Math.round(scrollBox.clientWidth * 0.82));
+document.querySelector('.nav-arrow-left').addEventListener('click', () => scrollBox.scrollBy({ left: -navStep(), behavior: 'smooth' }));
+document.querySelector('.nav-arrow-right').addEventListener('click', () => scrollBox.scrollBy({ left: navStep(), behavior: 'smooth' }));
