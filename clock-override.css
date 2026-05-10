@@ -1,0 +1,25 @@
+.hero .live-clock{
+  display:block;
+  width:fit-content;
+  max-width:100%;
+  margin:.75rem 0 0;
+  padding:.35rem .75rem;
+  border-radius:14px;
+  background:#eef6ff;
+  border:1px solid rgba(30,90,180,.22);
+  box-shadow:none;
+  color:#0b63c7;
+  font-weight:900;
+  font-size:clamp(.95rem,2.7vw,1.2rem);
+  line-height:1.25;
+  text-align:right;
+  direction:rtl;
+  unicode-bidi:plaintext;
+}
+@media(max-width:760px){
+  .hero .live-clock{
+    width:fit-content;
+    font-size:clamp(.9rem,4.1vw,1.05rem);
+    border-radius:12px;
+  }
+}
